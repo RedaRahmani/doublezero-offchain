@@ -29,8 +29,13 @@ pub struct Harvest2zCommand {
     /// program ID labels.
     #[arg(long, value_name = "JUPITER_LABEL")]
     specific_dex: Option<String>,
-    
-    #[arg(long, env = "JUPITER_API_KEY", hide_env_values = true, value_name = "API_KEY")]
+
+    #[arg(
+        long,
+        env = "JUPITER_API_KEY",
+        hide_env_values = true,
+        value_name = "API_KEY"
+    )]
     jupiter_api_key: Option<String>,
 
     #[command(flatten)]

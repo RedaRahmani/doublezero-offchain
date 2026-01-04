@@ -12,7 +12,6 @@ pub struct JupiterClient {
 }
 
 impl JupiterClient {
-
     pub fn new(api_key: &str) -> Result<Self> {
         let base_url = std::env::var("JUPITER_API_BASE_URL")
             .unwrap_or_else(|_| JUPITER_API_BASE_URL.to_string());
@@ -24,8 +23,7 @@ impl JupiterClient {
         let mut headers = header::HeaderMap::new();
         headers.insert(
             "x-api-key",
-            header::HeaderValue::from_str(api_key)
-                .context("Invalid Jupiter API key format")?,
+            header::HeaderValue::from_str(api_key).context("Invalid Jupiter API key format")?,
         );
 
         let client = Client::builder()
@@ -130,9 +128,7 @@ impl JupiterClient {
             ) || status.is_server_error();
 
             if !is_retryable || attempt >= MAX_RETRIES {
-                bail!(
-                    "Jupiter API request failed (HTTP {status}): {body_snippet}"
-                );
+                bail!("Jupiter API request failed (HTTP {status}): {body_snippet}");
             }
 
             tracing::warn!(
@@ -162,16 +158,15 @@ impl JupiterClient {
 #[allow(dead_code)]
 pub fn load_api_key_from_env() -> Result<String> {
     std::env::var("JUPITER_API_KEY").map_err(|_| {
-        anyhow::anyhow!(
-            "Jupiter API key required. Set JUPITER_API_KEY environment variable"
-        )
+        anyhow::anyhow!("Jupiter API key required. Set JUPITER_API_KEY environment variable")
     })
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use wiremock::{Mock, MockServer, ResponseTemplate, matchers};
+
+    use super::*;
 
     #[tokio::test]
     async fn test_client_sends_api_key_header() {
@@ -272,8 +267,7 @@ mod tests {
 
         Mock::given(matchers::any())
             .respond_with(
-                ResponseTemplate::new(401)
-                    .set_body_string(r#"{"error": "Invalid API key"}"#),
+                ResponseTemplate::new(401).set_body_string(r#"{"error": "Invalid API key"}"#),
             )
             .mount(&mock_server)
             .await;
@@ -316,9 +310,7 @@ mod tests {
         let mock_server = MockServer::start().await;
 
         Mock::given(matchers::any())
-            .respond_with(
-                ResponseTemplate::new(400).set_body_string("Bad request"),
-            )
+            .respond_with(ResponseTemplate::new(400).set_body_string("Bad request"))
             .expect(1)
             .mount(&mock_server)
             .await;
