@@ -25,17 +25,14 @@ const TOKEN_ACCOUNT_RENT_EXEMPTION_LAMPORTS: u64 = 2_039_280;
 
 #[derive(Debug, Args, Clone)]
 pub struct Harvest2zCommand {
-    /// See https://api.jup.ag/swap/v1/program-id-to-label for available
+    /// See https://dev.jup.ag/api-reference/swap/program-id-to-label for available
     /// program ID labels.
     #[arg(long, value_name = "JUPITER_LABEL")]
     specific_dex: Option<String>,
 
-    #[arg(
-        long,
-        env = "JUPITER_API_KEY",
-        hide_env_values = true,
-        value_name = "API_KEY"
-    )]
+    /// Jupiter API key for authenticated access. If not provided, falls back
+    /// to the legacy lite-api.jup.ag endpoint (deprecated Jan 31 2026).
+    #[arg(long, value_name = "API_KEY")]
     jupiter_api_key: Option<String>,
 
     #[command(flatten)]
@@ -50,14 +47,7 @@ impl Harvest2zCommand {
             solana_payer_options,
         } = self;
 
-        let api_key = jupiter_api_key
-            .or_else(|| std::env::var("JUPITER_API_KEY").ok())
-            .ok_or_else(|| {
-                anyhow::anyhow!(
-                    "Jupiter API key required. Set JUPITER_API_KEY environment variable"
-                )
-            })?;
-        let jupiter_client = JupiterClient::new(&api_key)?;
+        let jupiter_client = JupiterClient::new(jupiter_api_key.as_deref())?;
 
         let wallet = Wallet::try_from(solana_payer_options)?;
         ensure!(
@@ -258,9 +248,6 @@ async fn try_quote_sol_to_2z(
         ..Default::default()
     };
 
-    // Only attempt 5 times, which should take about 2 seconds.
-    // Note: The JupiterClient already handles transient errors with retries,
-    // this loop is specifically for filtering route_plan length.
     for _ in 0..5 {
         let response = quote_request.try_execute(jupiter_client).await?;
 

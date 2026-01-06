@@ -22,6 +22,7 @@ pub enum JupiterInstructionVersion {
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct JupiterLegacyQuoteRequest {
+    /// Max value: 10_000 (100%).
     pub slippage_bps: u16,
 
     pub swap_mode: JupiterSwapMode,

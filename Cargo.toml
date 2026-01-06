@@ -40,7 +40,7 @@ md5 = "0.8"
 borsh = { version = "1", features = ["derive"] }
 bytemuck = { version = "1", features = ["derive", "min_const_generics"] }
 chrono = { version = "0.4", features = ["serde"] }
-clap = { version = "4", features = ["derive", "env"] }
+clap = { version = "4", features = ["derive"] }
 config = "0.15"
 csv = "1"
 dotenvy = "0.15"
