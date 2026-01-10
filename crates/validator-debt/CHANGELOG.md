@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- bail early when Revenue Distribution program is paused ([#2462](https://github.com/doublezerofoundation/doublezero-offchain/issues/2462))
 - filter out epochs with no successful debt collection (([#246](https://github.com/doublezerofoundation/doublezero-offchain/pull/246))
 - remove unnecessary loops to calculate results, only display epochs that debt is collected (([#245](https://github.com/doublezerofoundation/doublezero-offchain/pull/245))
 - add finalize rewards and sweep tokens to initialize distribution workflow ([#243](https://github.com/doublezerofoundation/doublezero-offchain/pull/243))
