@@ -111,10 +111,10 @@ mod tests {
     #[test]
     fn test_visible_rows_filters_correctly() {
         let results = vec![
-            make_result(1, 10, 5, 1000, 500, 0),  // visible
-            make_result(2, 0, 0, 0, 0, 0),        // hidden: no validators
-            make_result(3, 5, 0, 500, 0, 2),      // hidden: no successful tx
-            make_result(4, 8, 3, 800, 300, 1),    // visible
+            make_result(1, 10, 5, 1000, 500, 0), // visible
+            make_result(2, 0, 0, 0, 0, 0),       // hidden: no validators
+            make_result(3, 5, 0, 500, 0, 2),     // hidden: no successful tx
+            make_result(4, 8, 3, 800, 300, 1),   // visible
         ];
 
         let visible = visible_rows(&results);
@@ -127,8 +127,8 @@ mod tests {
     fn test_summary_equals_sum_of_visible_rows() {
         let results = vec![
             make_result(1, 10, 5, 1_000_000_000, 500_000_000, 1),
-            make_result(2, 0, 0, 2_000_000_000, 0, 0),           // hidden
-            make_result(3, 5, 0, 3_000_000_000, 0, 10),          // hidden
+            make_result(2, 0, 0, 2_000_000_000, 0, 0), // hidden
+            make_result(3, 5, 0, 3_000_000_000, 0, 10), // hidden
             make_result(4, 8, 3, 800_000_000, 300_000_000, 2),
         ];
 
@@ -142,14 +142,15 @@ mod tests {
 
         // Verify hidden epochs are NOT included
         // If the bug existed, total_debt would be 6_800_000_000
-        assert_ne!(summary.total_debt, 1_000_000_000 + 2_000_000_000 + 3_000_000_000 + 800_000_000);
+        assert_ne!(
+            summary.total_debt,
+            1_000_000_000 + 2_000_000_000 + 3_000_000_000 + 800_000_000
+        );
     }
 
     #[test]
     fn test_summary_outstanding_calculation() {
-        let results = vec![
-            make_result(1, 10, 5, 1000, 400, 0),
-        ];
+        let results = vec![make_result(1, 10, 5, 1000, 400, 0)];
         let summary = compute_visible_summary(&results);
 
         assert_eq!(summary.total_outstanding(), 600);
@@ -157,9 +158,7 @@ mod tests {
 
     #[test]
     fn test_summary_percentage_paid() {
-        let results = vec![
-            make_result(1, 10, 5, 1000, 250, 0),
-        ];
+        let results = vec![make_result(1, 10, 5, 1000, 250, 0)];
         let summary = compute_visible_summary(&results);
 
         assert!((summary.percentage_paid() - 0.25).abs() < 0.0001);
@@ -167,9 +166,7 @@ mod tests {
 
     #[test]
     fn test_summary_percentage_paid_zero_debt() {
-        let results = vec![
-            make_result(1, 10, 5, 0, 0, 0),
-        ];
+        let results = vec![make_result(1, 10, 5, 0, 0, 0)];
         let summary = compute_visible_summary(&results);
 
         assert_eq!(summary.percentage_paid(), 0.0);
