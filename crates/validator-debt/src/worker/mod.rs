@@ -561,7 +561,7 @@ pub async fn post_debt_collection_summary_to_slack(
 }
 
 pub async fn post_debt_collections_to_slack(
-    debt_collection_results: &Vec<DebtCollectionResults>,
+    debt_collection_results: &[DebtCollectionResults],
     dry_run: bool,
     client: &Client,
 ) -> Result<()> {
