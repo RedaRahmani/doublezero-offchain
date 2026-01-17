@@ -1,5 +1,7 @@
 use crate::transaction::DebtCollectionResults;
 
+/// Summary struct used in tests to verify summary calculations.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DebtCollectionSummary {
     pub total_paid: u64,
@@ -8,6 +10,7 @@ pub struct DebtCollectionSummary {
     pub visible_epoch_count: usize,
 }
 
+#[allow(dead_code)]
 impl DebtCollectionSummary {
     /// Outstanding debt = total_debt - total_paid
     pub fn total_outstanding(&self) -> u64 {
@@ -45,7 +48,8 @@ pub fn visible_rows(results: &[DebtCollectionResults]) -> Vec<&DebtCollectionRes
 /// Builds the Slack summary numbers by summing the given rows.
 ///
 /// Note: this function does no filtering. If the Slack table hides some epochs,
-/// filter first and then call this, otherwise the summary and table won’t match.
+/// filter first and then call this, otherwise the summary and table won't match.
+#[allow(dead_code)]
 pub fn compute_summary(results: &[&DebtCollectionResults]) -> DebtCollectionSummary {
     let mut summary = DebtCollectionSummary::default();
 
@@ -60,6 +64,7 @@ pub fn compute_summary(results: &[&DebtCollectionResults]) -> DebtCollectionSumm
 }
 
 /// filter to visible rows and compute summary in one step.
+#[allow(dead_code)]
 pub fn compute_visible_summary(results: &[DebtCollectionResults]) -> DebtCollectionSummary {
     let visible = visible_rows(results);
     compute_summary(&visible)
@@ -124,7 +129,7 @@ mod tests {
     }
 
     #[test]
-    fn test_summary_equals_sum_of_visible_rows() {
+    fn test_compute_visible_summary_filters_correctly() {
         let results = vec![
             make_result(1, 10, 5, 1_000_000_000, 500_000_000, 1),
             make_result(2, 0, 0, 2_000_000_000, 0, 0), // hidden
@@ -134,18 +139,34 @@ mod tests {
 
         let summary = compute_visible_summary(&results);
 
-        // Only epochs 1 and 4 should be counted
+        // compute_visible_summary only counts visible epochs (1 and 4)
         assert_eq!(summary.visible_epoch_count, 2);
         assert_eq!(summary.total_debt, 1_000_000_000 + 800_000_000);
         assert_eq!(summary.total_paid, 500_000_000 + 300_000_000);
         assert_eq!(summary.insufficient_funds_count, 1 + 2);
+    }
 
-        // Verify hidden epochs are NOT included
-        // If the bug existed, total_debt would be 6_800_000_000
-        assert_ne!(
+    #[test]
+    fn test_compute_summary_sums_all_passed_rows() {
+        // compute_summary does NO filtering - it sums whatever is passed in
+        let results = [
+            make_result(1, 10, 5, 1_000_000_000, 500_000_000, 1),
+            make_result(2, 0, 0, 2_000_000_000, 0, 0),
+            make_result(3, 5, 0, 3_000_000_000, 0, 10),
+            make_result(4, 8, 3, 800_000_000, 300_000_000, 2),
+        ];
+
+        let refs: Vec<&DebtCollectionResults> = results.iter().collect();
+        let summary = compute_summary(&refs);
+
+        // All 4 epochs should be summed
+        assert_eq!(summary.visible_epoch_count, 4);
+        assert_eq!(
             summary.total_debt,
             1_000_000_000 + 2_000_000_000 + 3_000_000_000 + 800_000_000
         );
+        assert_eq!(summary.total_paid, 500_000_000 + 300_000_000);
+        assert_eq!(summary.insufficient_funds_count, 13); // 1 + 0 + 10 + 2
     }
 
     #[test]
