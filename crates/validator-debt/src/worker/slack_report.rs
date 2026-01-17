@@ -17,7 +17,6 @@ impl DebtCollectionSummary {
         self.total_debt.saturating_sub(self.total_paid)
     }
 
-    /// Percentage paid as a ratio (0.0 to 1.0). Returns 0.0 if total_debt is 0.
     pub fn percentage_paid(&self) -> f64 {
         if self.total_debt == 0 {
             0.0
@@ -33,8 +32,7 @@ impl DebtCollectionSummary {
 /// - `total_validators > 0`
 /// - `successful_transactions_count > 0`
 ///
-/// Epochs that don't meet these criteria are skipped in the table display,
-/// so they must also be excluded from summary totals.
+/// Epochs that don't meet these criteria are skipped in the table display.
 #[inline]
 pub fn is_row_visible(dcr: &DebtCollectionResults) -> bool {
     dcr.total_validators > 0 && dcr.successful_transactions_count > 0
@@ -45,10 +43,6 @@ pub fn visible_rows(results: &[DebtCollectionResults]) -> Vec<&DebtCollectionRes
     results.iter().filter(|dcr| is_row_visible(dcr)).collect()
 }
 
-/// Builds the Slack summary numbers by summing the given rows.
-///
-/// Note: this function does no filtering. If the Slack table hides some epochs,
-/// filter first and then call this, otherwise the summary and table won't match.
 #[allow(dead_code)]
 pub fn compute_summary(results: &[&DebtCollectionResults]) -> DebtCollectionSummary {
     let mut summary = DebtCollectionSummary::default();
