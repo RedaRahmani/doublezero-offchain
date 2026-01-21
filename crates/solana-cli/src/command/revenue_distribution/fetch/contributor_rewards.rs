@@ -42,16 +42,16 @@ pub struct ContributorRewardsCommand {
 #[derive(Debug, Tabled)]
 struct ContributorRewardsSummaryRow {
     service_key: Pubkey,
-    manager: Pubkey,
+    manager: String,
     blocks_protocol_management: &'static str,
-    recipients_configured_count: String,
+    recipients_configured_count: u8,
 }
 
 #[derive(Debug, Tabled)]
 struct ContributorRewardsRecipientRow {
     index: usize,
     recipient: Pubkey,
-    recipient_ata: Pubkey,
+    ata: Pubkey,
     proportion: String,
 }
 
@@ -63,6 +63,11 @@ impl ContributorRewardsCommand {
             view,
             connection_options,
         } = self;
+
+        // Validate: --service-key and --manager are mutually exclusive
+        if service_key.is_some() && manager.is_some() {
+            bail!("--service-key and --manager are mutually exclusive, please specify only one.");
+        }
 
         // Validate: recipients view requires --service-key
         if view == ContributorRewardsViewMode::Recipients && service_key.is_none() {
@@ -132,16 +137,7 @@ async fn try_print_summary_view(
             .collect()
     };
 
-    let filtered_accounts: Vec<_> = if service_key.is_some() && manager_filter.is_some() {
-        accounts
-            .into_iter()
-            .filter(|(_, data)| data.rewards_manager_key == manager_filter.unwrap())
-            .collect()
-    } else {
-        accounts
-    };
-
-    if filtered_accounts.is_empty() {
+    if accounts.is_empty() {
         if manager_filter.is_some() {
             bail!("No contributor rewards accounts found for the specified manager");
         } else {
@@ -149,19 +145,24 @@ async fn try_print_summary_view(
         }
     }
 
-    let mut rows: Vec<ContributorRewardsSummaryRow> = filtered_accounts
+    let mut rows: Vec<ContributorRewardsSummaryRow> = accounts
         .iter()
         .map(|(_, data)| {
-            let recipient_count = data.recipient_shares.active_iter().count();
+            let recipient_count = data.recipient_shares.active_iter().count() as u8;
+            let manager_display = if data.rewards_manager_key == Pubkey::default() {
+                String::new()
+            } else {
+                data.rewards_manager_key.to_string()
+            };
             ContributorRewardsSummaryRow {
                 service_key: data.service_key,
-                manager: data.rewards_manager_key,
+                manager: manager_display,
                 blocks_protocol_management: if data.is_set_rewards_manager_blocked() {
                     "yes"
                 } else {
                     "no"
                 },
-                recipients_configured_count: format!("{}", recipient_count),
+                recipients_configured_count: recipient_count,
             }
         })
         .collect();
@@ -172,7 +173,7 @@ async fn try_print_summary_view(
     super::print_table(
         rows,
         super::TableOptions {
-            columns_aligned_right: Some(&[3]),
+            columns_aligned_right: Some(&[2, 3]),
         },
     );
 
@@ -210,15 +211,14 @@ async fn try_print_recipients_view(
             ContributorRewardsRecipientRow {
                 index,
                 recipient: share.recipient_key,
-                recipient_ata: ata,
+                ata,
                 proportion: format!("{:.2}%", proportion_pct),
             }
         })
         .collect();
 
     if rows.is_empty() {
-        println!("No recipients configured for service key {service_key}");
-        return Ok(());
+        bail!("No recipients configured for service key {service_key}");
     }
 
     super::print_table(
@@ -296,6 +296,35 @@ mod tests {
         assert!(
             err_msg.contains("recipients"),
             "Error should mention recipients view, got: {err_msg}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_service_key_and_manager_mutually_exclusive() {
+        let cmd = ContributorRewardsCommand {
+            service_key: Some(Pubkey::new_unique()),
+            manager: Some(Pubkey::new_unique()),
+            view: ContributorRewardsViewMode::Summary,
+            connection_options: SolanaConnectionOptions::default(),
+        };
+
+        // Call the real execute method - validation happens before any RPC calls
+        let result = cmd.try_into_execute().await;
+
+        assert!(
+            result.is_err(),
+            "Expected error when both --service-key and --manager are provided"
+        );
+
+        let err_msg = result.unwrap_err().to_string();
+
+        assert!(
+            err_msg.contains("--service-key") && err_msg.contains("--manager"),
+            "Error should mention both flags, got: {err_msg}"
+        );
+        assert!(
+            err_msg.contains("mutually exclusive"),
+            "Error should mention mutual exclusivity, got: {err_msg}"
         );
     }
 }
